@@ -1,8 +1,14 @@
 package Net::PMP::Simple;
 
-use 5.006;
-use strict;
-use warnings;
+use 5.010;
+use strictures;
+
+use Moose;
+
+use HTTP::Request::Common;
+use LWP::UserAgent;
+use Try::Tiny;
+use URI::Escape;
 
 =head1 NAME
 
@@ -15,7 +21,6 @@ Version 0.01
 =cut
 
 our $VERSION = '0.01';
-
 
 =head1 SYNOPSIS
 
@@ -35,18 +40,35 @@ if you don't export anything, such as for a purely object-oriented module.
 
 =head1 SUBROUTINES/METHODS
 
-=head2 function1
+=cut
+
+=head2 __authentication_url
 
 =cut
 
-sub function1 {
+sub __authentication_url {
+	my ($self, %options) = @_;
+	return unless $options{base_url};
+	return $options{base_url} . '/j_security_check';
 }
 
-=head2 function2
+=head2 __authentication_options
 
 =cut
 
-sub function2 {
+sub __authentication_options {
+	my ($self, %options) = @_;
+}
+
+=head2 __authenticate
+
+=cut
+
+sub __authenticate {
+	my ($self, %options) = @_;
+	return unless $options{username};
+	return unless $options{password};
+	return LWP::UserAgent->new->request(POST $self->__authentication_url(base_url => 'https://pmp/'), 
 }
 
 =head1 AUTHOR
@@ -55,12 +77,7 @@ Nathaniel R Reindl, C<< <nrr at corvidae.org> >>
 
 =head1 BUGS
 
-Please report any bugs or feature requests to C<bug-net-pmp-simple at rt.cpan.org>, or through
-the web interface at L<http://rt.cpan.org/NoAuth/ReportBug.html?Queue=Net-PMP-Simple>.  I will be notified, and then you'll
-automatically be notified of progress on your bug as I make changes.
-
-
-
+Most definitely.
 
 =head1 SUPPORT
 
@@ -107,5 +124,7 @@ See http://dev.perl.org/licenses/ for more information.
 
 
 =cut
+
+__PACKAGE__->meta->make_immutable;
 
 1; # End of Net::PMP::Simple
