@@ -47,19 +47,26 @@ if you don't export anything, such as for a purely object-oriented module.
 
 =cut
 
-sub __authentication_url {
+sub __authentication_request {
 	my ($self, %options) = @_;
 	return unless $options{base_url};
+	my %query_parameters = (
+		'j_username' => $username,
+		'username' => $username,
+		'j_password' => $password,
+		'domainName' => 'LDAP',
+		'submit' => '',
+	);
 	return $options{base_url} . '/j_security_check';
 }
 
-sub __initialization_url {
+sub __initialization_request {
 	my ($self, %options) = @_;
 	return unless $options{base_url};
 	return $options{base_url} . '/PassTrixMain.cc';
 }
 
-sub __resource_url {
+sub __resource_request {
 	my ($self, %options) = @_;
 	return unless $options{base_url};
 	return unless $options{account};
@@ -70,10 +77,13 @@ sub __resource_url {
 		'account' => $options{account},
 		'resource' => $options{resource},
 	);
-	return $options{base_url} . '/jsp/xmlhttp/AjaxResponse.jsp'
+	return GET(
+		$options{base_url} . '/jsp/xmlhttp/AjaxResponse.jsp',
+		[%query_parameters],
+	);
 }
 
-sub __generate_password_url {
+sub __generate_password_request {
 	my ($self, %options) = @_;
 	return unless $options{base_url};
 	my $time;
@@ -82,10 +92,13 @@ sub __generate_password_url {
 		'Rule' => 'Standard',
 		'time' => $time,
 	);
-	return $options{base_url} . '/jsp/xmlhttp/AjaxResponse.jsp'
+	return GET(
+		$options{base_url} . '/jsp/xmlhttp/AjaxResponse.jsp',
+		[%query_parameters],
+	);
 }
 
-sub __change_password_url {
+sub __change_password_request {
 	my ($self, %options) = @_;
 	return unless $options{base_url};
 	return unless $options{account};
@@ -97,10 +110,13 @@ sub __change_password_url {
 		'defaultvalue_schar1' => $password,
 		'notes' = 'N/A',
 	);
-	return $options{base_url} . '/jsp/xmlhttp/AjaxResponse.jsp'
+	return GET(
+		$options{base_url} . '/jsp/xmlhttp/AjaxResponse.jsp',
+		[%query_parameters],
+	);
 }
 
-sub __create_resource_url {
+sub __create_resource_request {
 	my ($self, %options) = @_;
 	return unless $options{base_url};
 	return unless $options{account};
@@ -137,7 +153,10 @@ sub __create_resource_url {
 		'remotesync' => '0',
 		'remotemode' => 'ssh',
 	);
-	return $options{base_url} . '/jsp/xmlhttp/AjaxResponse.jsp'
+	return POST(
+		$options{base_url} . '/jsp/xmlhttp/AjaxResponse.jsp',
+		[%query_parameters],
+	);
 }
 
 =head2 __authentication_options
