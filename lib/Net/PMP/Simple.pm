@@ -129,8 +129,8 @@ sub __initialization_request
 sub __fetch_resource_request
 {
 	my ($self, %options) = @_;
-	return unless my $account = $options{account};
-	return unless my $resource = $options{resource};
+	die unless my $account = $options{account};
+	die unless my $resource = $options{resource};
 
 	my %query_parameters = (
 		'RequestType' => 'PasswordRetrieved',
@@ -163,9 +163,9 @@ sub __generate_password_request
 sub __change_password_request
 {
 	my ($self, %options) = @_;
-	return unless my $host_name = $options{host_name};
-	return unless my $account_name = $options{account_name};
-	return unless my $password = $options{password};
+	die unless my $host_name = $options{host_name};
+	die unless my $account_name = $options{account_name};
+	die unless my $password = $options{password};
 
 	my %query_parameters = (
 		'RequestType' => 'PasswordChange',
@@ -183,11 +183,15 @@ sub __change_password_request
 sub __create_resource_request
 {
 	my ($self, %options) = @_;
-	return unless $options{account};
-	return unless $options{resource};
+	die unless my $account = $options{account};
+	die unless my $application = $options{application};
+	die unless my $location = $options{location};
+	die unless my $password = $options{password};
+	die unless my $resource_name = $options{resource_name};
+	die unless my $resource_url = $options{resource_url};
 
 	my %query_parameters = (
-		'SysName' => $resource,
+		'SysName' => $resource_name,
 		'DNSName' => '',
 		'SysType' => 'Application',
 		'group' => 'Default Group',
@@ -224,44 +228,60 @@ sub __create_resource_request
 	);
 }
 
-=head2 __authentication_options
-
-=cut
-
-sub __authentication_options
-{
-	my ($self, %options) = @_;
-}
-
 =head2 authenticate
 
 =cut
 
 sub authenticate
 {
-	my ($self, %options) = @_;
-	return unless $options{username};
-	return unless $options{password};
-	return $self->lwp_instance->request($self->__authentication_request(%options)); 
+	my ($self) = @_;
+
+	return $self->lwp_instance->request($self->__authentication_request); 
 }
 
 =head2 get_resource
 
 =cut
 
+sub get_resource
+{
+	my ($self) = @_;
+
+	return $self->lwp_instance->request($self->__authentication_request); 
+}
+
 =head2 create_resource
 
 =cut
+
+sub create_resource
+{
+	my ($self) = @_;
+
+	return $self->lwp_instance->request($self->__authentication_request); 
+}
 
 =head2 change_password
 
 =cut
 
+sub change_password
+{
+	my ($self) = @_;
+
+	return $self->lwp_instance->request($self->__authentication_request); 
+}
+
 =head2 generate_password
 
 =cut
 
+sub generate_password
+{
+	my ($self) = @_;
 
+	return $self->lwp_instance->request($self->__authentication_request); 
+}
 
 =head1 AUTHOR
 
