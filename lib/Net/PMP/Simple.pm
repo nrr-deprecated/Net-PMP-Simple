@@ -4,12 +4,20 @@ use 5.010;
 use strictures;
 
 use Moose;
+use Moose::Util::TypeConstraints;
+use MooseX::Types::LWP::UserAgent qw[ UserAgent ];
 
 use DateTime;
 use HTTP::Request::Common;
 use LWP::UserAgent;
 use Try::Tiny;
 use URI::Escape;
+
+has 'lwp_instance' => (
+	is => 'rw',
+	isa => 'UserAgent',
+	coerce => 1,
+);
 
 =head1 NAME
 
@@ -43,13 +51,24 @@ if you don't export anything, such as for a purely object-oriented module.
 
 =cut
 
+=head2 BUILD
+
+=cut
+
+sub BUILD
+{
+}
+
 =head2 __authentication_url
 
 =cut
 
-sub __authentication_request {
+sub __authentication_request
+{
 	my ($self, %options) = @_;
 	return unless $options{base_url};
+	return unless my $username = $options{username};
+	return unless my $password = $options{password};
 	my %query_parameters = (
 		'j_username' => $username,
 		'username' => $username,
@@ -57,16 +76,21 @@ sub __authentication_request {
 		'domainName' => 'LDAP',
 		'submit' => '',
 	);
-	return $options{base_url} . '/j_security_check';
+	return POST(
+		$options{base_url} . '/j_security_check',
+		[%query_parameters]
+	);
 }
 
-sub __initialization_request {
+sub __initialization_request
+{
 	my ($self, %options) = @_;
 	return unless $options{base_url};
-	return $options{base_url} . '/PassTrixMain.cc';
+	return GET($options{base_url} . '/PassTrixMain.cc');
 }
 
-sub __resource_request {
+sub __resource_request
+{
 	my ($self, %options) = @_;
 	return unless $options{base_url};
 	return unless $options{account};
@@ -83,7 +107,8 @@ sub __resource_request {
 	);
 }
 
-sub __generate_password_request {
+sub __generate_password_request
+{
 	my ($self, %options) = @_;
 	return unless $options{base_url};
 	my $time;
@@ -98,7 +123,8 @@ sub __generate_password_request {
 	);
 }
 
-sub __change_password_request {
+sub __change_password_request
+{
 	my ($self, %options) = @_;
 	return unless $options{base_url};
 	return unless $options{account};
@@ -116,7 +142,8 @@ sub __change_password_request {
 	);
 }
 
-sub __create_resource_request {
+sub __create_resource_request
+{
 	my ($self, %options) = @_;
 	return unless $options{base_url};
 	return unless $options{account};
@@ -163,19 +190,21 @@ sub __create_resource_request {
 
 =cut
 
-sub __authentication_options {
+sub __authentication_options
+{
 	my ($self, %options) = @_;
 }
 
-=head2 __authenticate
+=head2 authenticate
 
 =cut
 
-sub __authenticate {
+sub authenticate
+{
 	my ($self, %options) = @_;
 	return unless $options{username};
 	return unless $options{password};
-	return LWP::UserAgent->new->request(POST $self->__authentication_url(base_url => 'https://pmp/'), 
+	return $self->lwp_instance->request($self->__authentication_request(%options)); 
 }
 
 =head1 AUTHOR
@@ -192,32 +221,21 @@ You can find documentation for this module with the perldoc command.
 
     perldoc Net::PMP::Simple
 
-
 You can also look for information at:
 
 =over 4
 
-=item * RT: CPAN's request tracker (report bugs here)
+=item * GitHub Issues (report bugs here)
 
-L<http://rt.cpan.org/NoAuth/Bugs.html?Dist=Net-PMP-Simple>
+L<https://github.com/nrr/Net-PMP-Simple/issues>
 
 =item * AnnoCPAN: Annotated CPAN documentation
 
 L<http://annocpan.org/dist/Net-PMP-Simple>
 
-=item * CPAN Ratings
-
-L<http://cpanratings.perl.org/d/Net-PMP-Simple>
-
-=item * Search CPAN
-
-L<http://search.cpan.org/dist/Net-PMP-Simple/>
-
 =back
 
-
 =head1 ACKNOWLEDGEMENTS
-
 
 =head1 LICENSE AND COPYRIGHT
 
@@ -228,7 +246,6 @@ under the terms of either: the GNU General Public License as published
 by the Free Software Foundation; or the Artistic License.
 
 See http://dev.perl.org/licenses/ for more information.
-
 
 =cut
 
