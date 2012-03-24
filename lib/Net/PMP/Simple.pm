@@ -13,10 +13,36 @@ use LWP::UserAgent;
 use Try::Tiny;
 use URI::Escape;
 
-has 'lwp_instance' => (
+has 'user_agent' => (
 	is => 'rw',
 	isa => 'UserAgent',
-	coerce => 1,
+);
+
+has 'base_url' => (
+	is => 'rw',
+	isa => 'Str',
+);
+
+has 'resource_path' => (
+	is => 'ro',
+	isa => 'Str',
+	default => '/jsp/xmlhttp/AjaxResponse.jsp',
+);
+
+has 'authentication_path' => (
+	is => 'ro',
+	isa => 'Str',
+	default => '/j_security_check',
+);
+
+has 'username' => (
+	is => 'rw',
+	isa => 'Str',
+);
+
+has 'password' => (
+	is => 'rw',
+	isa => 'Str',
 );
 
 =head1 NAME
@@ -51,58 +77,69 @@ if you don't export anything, such as for a purely object-oriented module.
 
 =cut
 
-=head2 BUILD
-
-=cut
-
 sub BUILD
 {
+	my ($self) = @_;
+
+	$self->user_agent(LWP::UserAgent->new(
+		cookie_jar => HTTP::Cookies->new,
+	);
 }
 
-=head2 __authentication_url
+sub __authentication_url
+{
+	my ($self) = @_;
 
-=cut
+	return $self->base_url . $self->authentication_path;
+}
+
+sub __resource_url
+{
+	my ($self) = @_;
+
+	return $self->base_url . $self->resource_path;
+}
 
 sub __authentication_request
 {
 	my ($self, %options) = @_;
-	return unless $options{base_url};
-	return unless my $username = $options{username};
-	return unless my $password = $options{password};
+
 	my %query_parameters = (
-		'j_username' => $username,
-		'username' => $username,
-		'j_password' => $password,
+		'j_username' => $self->username,
+		'username' => $self->username,
+		'j_password' => $self->password,
 		'domainName' => 'LDAP',
 		'submit' => '',
 	);
 	return POST(
-		$options{base_url} . '/j_security_check',
-		[%query_parameters]
+		$self->__authentication_url,
+		[%query_parameters],
 	);
 }
 
 sub __initialization_request
 {
 	my ($self, %options) = @_;
-	return unless $options{base_url};
-	return GET($options{base_url} . '/PassTrixMain.cc');
+
+	return GET(
+		$self->base_url . '/PassTrixMain.cc'
+	);
 }
 
-sub __resource_request
+sub __fetch_resource_request
 {
 	my ($self, %options) = @_;
-	return unless $options{base_url};
-	return unless $options{account};
-	return unless $options{resource};
+	return unless my $account = $options{account};
+	return unless my $resource = $options{resource};
+
 	my %query_parameters = (
 		'RequestType' => 'PasswordRetrieved',
 		'SUBREQUEST' => 'XMLHTTP'
-		'account' => $options{account},
-		'resource' => $options{resource},
+		'account' => $account,
+		'resource' => $resource,
 	);
 	return GET(
-		$options{base_url} . '/jsp/xmlhttp/AjaxResponse.jsp',
+		$self->__resource_url,
 		[%query_parameters],
 	);
 }
@@ -110,7 +147,7 @@ sub __resource_request
 sub __generate_password_request
 {
 	my ($self, %options) = @_;
-	return unless $options{base_url};
+
 	my $time;
 	my %query_parameters = (
 		'RequestType' => 'generate',
@@ -118,7 +155,7 @@ sub __generate_password_request
 		'time' => $time,
 	);
 	return GET(
-		$options{base_url} . '/jsp/xmlhttp/AjaxResponse.jsp',
+		$self->__resource_url,
 		[%query_parameters],
 	);
 }
@@ -126,9 +163,10 @@ sub __generate_password_request
 sub __change_password_request
 {
 	my ($self, %options) = @_;
-	return unless $options{base_url};
-	return unless $options{account};
-	return unless $options{resource};
+	return unless my $host_name = $options{host_name};
+	return unless my $account_name = $options{account_name};
+	return unless my $password = $options{password};
+
 	my %query_parameters = (
 		'RequestType' => 'PasswordChange',
 		'hostName' => $host_name,
@@ -137,7 +175,7 @@ sub __change_password_request
 		'notes' = 'N/A',
 	);
 	return GET(
-		$options{base_url} . '/jsp/xmlhttp/AjaxResponse.jsp',
+		$self->__resource_url,
 		[%query_parameters],
 	);
 }
@@ -145,9 +183,9 @@ sub __change_password_request
 sub __create_resource_request
 {
 	my ($self, %options) = @_;
-	return unless $options{base_url};
 	return unless $options{account};
 	return unless $options{resource};
+
 	my %query_parameters = (
 		'SysName' => $resource,
 		'DNSName' => '',
@@ -181,7 +219,7 @@ sub __create_resource_request
 		'remotemode' => 'ssh',
 	);
 	return POST(
-		$options{base_url} . '/jsp/xmlhttp/AjaxResponse.jsp',
+		$self->__resource_url,
 		[%query_parameters],
 	);
 }
@@ -206,6 +244,24 @@ sub authenticate
 	return unless $options{password};
 	return $self->lwp_instance->request($self->__authentication_request(%options)); 
 }
+
+=head2 get_resource
+
+=cut
+
+=head2 create_resource
+
+=cut
+
+=head2 change_password
+
+=cut
+
+=head2 generate_password
+
+=cut
+
+
 
 =head1 AUTHOR
 
@@ -249,6 +305,5 @@ See http://dev.perl.org/licenses/ for more information.
 
 =cut
 
-__PACKAGE__->meta->make_immutable;
-
-1; # End of Net::PMP::Simple
+no Moose;
+__PACKAGE__->meta->make_immutable; # End of Net::PMP::Simple
